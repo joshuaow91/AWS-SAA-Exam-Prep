@@ -1,7 +1,5 @@
 
-AWA141128608 use by june 30th
-AWS user account id 590183838771
-https://joshuaow.signin.aws.amazon.com/console
+
 
 Region > availability zone > local zone >
 
