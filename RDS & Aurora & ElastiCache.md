@@ -1,0 +1,244 @@
+# AWS Fundamentals - RDS + Aurora + Elasticache
+
+## RDS- relational database service
+- create databases in the cloud
+- managed DB service for relational SQL DB
+	- supports engines for:
+		- postgres
+		- mysql
+		- mariadb
+		- oracle
+		- microsoft SQL server
+		- ibm db2
+		- Aurora (aws proprietary db)
+- **why use rds over deploying own DB?
+	- automated provisioning and patching
+	- continuous backups and restores to specific timestamps (Point in time Restore)
+	- monitoring dashboards
+	- read replicas for improved read performance
+	- set up multi AZ
+	- maintenance windows
+	- scaling capability
+	- storage back by EBS gp2 or io 1
+- Cannot SSH into instances
+- RDS Storage Auto Scaling
+	- increase storage dynamically and scaled automatically
+	- set a max threshold
+	- avoids manual scaling
+	- useful for unpredictable workloads
+- **RDS Read Replicas 
+	- help scale reads
+	- create up to 15 read replicas within same or cross AZ
+	- replication is ASYNC, reads are eventually consistent
+	- replicas can be promoted to their own DB
+	- applications must update connection string to leverage read replicas in rds cluster
+	- *Use cases
+		- run analytics
+		- only for SELECT statements
+	- Network Cost
+		- RDS read replica in same region no cross AZ fee applied
+		- cross region replica will have fees
+- Multi AZ
+	- used for disaster recovery
+	- SYNC replication
+	- One DNS name - automatic failover to stanbdy DB
+	- increased availability
+	- no manual intervention in apps
+	- not used for scaling - standby is just used for standby
+	- Read replicas can be setup for multi AZ
+- **RDS from single to multi AZ
+	- modify DB, click multi AZ
+	- zero downtime operation (db doesnt need to stop)
+	- internally snapshot is taken and restored in a new AZ Synch is established
+- RDS Custom
+	- for oracle and msft sql server
+	- automates setup operations and scaling still
+	- custom part gives access to underlying DB
+		- configure internal settings
+		- install patches
+		- enable native features
+		- access underlying ec2 instance using ssh or ssm
+## Aurora
+- proprietary from AWS
+- compatible with mysql or postgres
+- **Aurora is cloud optimized 
+	- claims 5x performance improvement over mysql on rds
+	- claims 3x performance improvement over postgres on rds
+- **storage auto grows in increments of 10gb up to 128tb
+- can have up to 15 read replicas
+	- replication is typically sub 10 seconds faster then mysql
+- failover is instantaneous
+- cost is about 20% more but more efficient 
+- high availability and read scaling
+	- 6 copies of data across 3 AZ
+		- 4 copies out of 6 needed for writes
+		- 3 out of 6 copies needed for reads
+		- self healing with peer to peer replication
+		- storage is striped across 100s of volumes
+	- only one instance takes writes
+	- failover is less than 30 seconds on average
+	- up to 15 read replicas
+		- supports cross region replications
+	- aurora db cluster
+		- **writer endpoint
+			- always pointing to master
+		- read replicas can have auto scaling
+			- **Reader endpoint 
+				- helps with connection LBing
+				- happens at connection level
+- Features
+	- auto failover
+	- backup recovery
+	- isolation and security
+	- industry compliance
+	- push button scaling
+	- auto patchin w/ zero down time
+	- advanced monitoring
+	- routine maint.
+	- backtrack - restore data at any point of time w/o using backups
+- **Advanced Concepts
+	- replicas - auto scaling
+		- adds replicas and reader endpoint is extended
+	- custom endpoints
+		- define a subset of instances as custom endpoint
+		- can be used for analytical queries and only query subset
+	- serverless
+		- automated instantiation
+		- good for infrequent or unpredictable workloads
+		- no cap planning needed
+		- pay per seconds
+	- Global Aurora
+		- cross region read replicas
+		- aurora global DB
+			- 1 primary region
+			- up to 5 secondary regions
+			- up to 16 read replicas per secondary region
+			- **typical cross region replication takes less than 1 second
+				- if on exam - hint to use global aurora
+	- machine learning
+		- enable ML based predictions
+		- supported services
+			- amazon sage maker
+			- amazon comprehend
+		- you dont need ML exp.
+		- use case
+			- fraud detection
+			- ads targeting
+			- sentiment analysis
+			- product recommendations
+
+## RDS & Aurora Backup and Monitoring
+
+### RDS Backups
+- automated, daily full backups
+- every 5 mins transaction log is backed up
+- ability to restore to any point in time
+- 1 - 35 days retention 
+- manually db snapshots option
+	- manual
+	- backup retained for as long as you want
+- do snapshot, delete and restore when ready - cost savings vs backup and stop DB\
+### Aurora Backups
+- automated backups
+	- 1 - 35 days
+	- point in time recovery
+- manual db snapshots
+	- trigger manually
+	- retention for as long as you want
+### restore options
+- restoring a rds or aurora backup or snapshot creates a new database
+- restoring from mysql rds database from s3
+	- create backup of own on premis db
+	- store it in s3
+	- restor file on a rds instance
+- restoring aurora cluster from s3
+	- create a back up on premis
+	- store in s3
+	- resore file on new aurora cluster
+### aurora db cloning
+- creates new a db cluster from an existing one
+- faster than snapshot and restore
+	- uses copy on write protocol
+- very fast and cost effective
+## RDS Security
+- at rest encryption
+	- using AWS KMS defined at launch
+- take a snapshot and restore as encrypted to encrypt unencrypted db
+- in-flight encryp
+	- TLS ready by default 
+- IAM auth - iam roles to connect instead of username and pass
+- security groups control network access
+- no SSH
+- audit logs can be enabled
+## RDS Proxy
+- fully managed
+- allows apps to pool and share connections
+- improve efficiency
+	- reduce cpu and ram and min open connections
+- serverless
+- autoscaling
+- high availability
+- reduced failover time by up to 66%
+- no code changes required to apps
+- **if you need to enforce IAM Auth think RDS Proxy
+- never publicly accessible
+## ElastiCache
+- managed redis or memcaches
+- high performance low latency
+- reduces load off of db
+- makes application stateless
+- requires heavy application code changes
+- Architecture
+	- application queries elasticache
+		- cache hit
+	- if cache miss
+		- read from DB
+		- write back to cache
+	- cache invalidation stratgey
+		- ensure only the lastest data is stored
+	- user session store
+		- write and retrieve session cache
+- redis - replication
+	- multi AZ
+	- auto failover
+	- read replicas to scale reads
+	- high avail
+	- back p and restore
+	- durable using AOF
+	- supports sets and sorted sets
+- Memcaches - sharding
+	- multi node for partitioning
+	- no high avail
+	- non persistent
+	- no backup and restore
+	- multi threaded
+### Cache Security
+- supports iam auth
+- iam policies
+- redis auth
+- memcached
+	- SASL based auth
+- **Patterns
+	- lazy loading
+	- write through
+	- session store
+- **Redis 
+	- use case = computationally complex
+	- sorted set guarantee uniqueness
+	- new element ranked in real time and added in correct order
+## PORTS to be familiar with
+Here's a list of **standard** ports you should see at least once. You shouldn't remember them (the exam will not test you on that), but **you should be able to differentiate between an Important (HTTPS - port 443) and a database port (PostgreSQL - port 5432)** 
+
+**Important ports:**
+- FTP: 21
+- SSH: 22
+- SFTP: 22 (same as SSH)
+- HTTP: 80
+- HTTPS: 443
+**vs RDS Databases ports:**
+- PostgreSQL: 5432
+- MySQL: 3306
+- Oracle RDS: 1521
+- MSSQL Server: 1433
+- MariaDB: 3306 (same as MySQL)
+- Aurora: 5432 (if PostgreSQL compatible) or 3306 (if MySQL compatible)
